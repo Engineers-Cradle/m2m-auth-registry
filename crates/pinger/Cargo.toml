@@ -1,0 +1,25 @@
+[package]
+name = "m2m-service-auth-registry-pinger"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenv = "0.15.0"
+redis = { version = "0.26.1", features = ["tokio-comp","cluster-async"] }
+tokio = { version = "1.40.0", features = ["full"] }
+actix-web = "4.3.1"
+actix-http = "3.4.0"
+serde = { version = "1.0.167", features = ["derive"] }
+serde_json = "1.0.100"
+actix = "0.13.0"
+env_logger = "0.11.0"
+lazy_static = "1.4"
+listenfd = "1.0.1"
+tracing-actix-web = "0.7"
+tracing = "0.1"
+hyperflake-rs = "0.1"
+rusqlite = { version = "0.32.0", features = ["bundled"] }
+chrono = { version = "0.4.34", features = ["serde", "clock"] }
+min_jwt = { version = "0.10.0", features = [ "p256", "serde", "serde_json"] }
+p256 = { version = "0.13.0", features = [ "ecdsa"] }
+rand = "0.8"

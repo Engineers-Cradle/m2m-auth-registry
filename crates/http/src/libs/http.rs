@@ -20,7 +20,7 @@ pub async fn start_web_server() -> std::io::Result<()> {
     let redis_client: redis::Client =
         crate::libs::redis::connection_to_redis(&env_config.redis_url).await;
 
-    let private_key = jwt::generate_private_key();
+    let private_key = jwt::read_private_key();
     let app_state: AppState = AppState {
         redis_client: redis_client,
         private_key: private_key,

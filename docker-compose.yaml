@@ -1,0 +1,52 @@
+version: '3.7'
+
+services:
+  http:
+    build:
+      context: ./crates/http
+      dockerfile: Dockerfile
+    ports:
+      - "7070:4000"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - WEB_SERVER_PORT=4000
+      - NUM_WORKERS=1
+      - LOG_LEVEL="info"
+    networks:
+      - m2mar
+
+  attendance:
+    build:
+      context: ./crates/attendance
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - m2mar
+
+  pinger:
+    build:
+      context: ./crates/pinger
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - m2mar
+
+  redis:
+    image: "redis:alpine"
+    networks:
+      - m2mar
+    ports:
+      - "6380:6379"
+
+networks:
+  m2mar:
+
+    

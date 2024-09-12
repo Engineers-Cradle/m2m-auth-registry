@@ -1349,6 +1349,7 @@ dependencies = [
  "dotenv",
  "env_logger",
  "hyperflake-rs",
+ "jwtk",
  "lazy_static",
  "listenfd",
  "min_jwt",

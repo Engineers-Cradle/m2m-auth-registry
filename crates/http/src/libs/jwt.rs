@@ -64,43 +64,13 @@ pub fn verify_jwt(jwt: &str, public_key: jwtk::ecdsa::EcdsaPublicKey) -> VerifyN
         node_id: Option<String>,
     }
 
-    #[allow(dead_code)]
     struct Claims {
-        sub: Option<String>,
-        iss: Option<String>,
-        iat: Option<i64>,
-        nbf: Option<i64>,
-        exp: Option<i64>,
-        aud: Option<Vec<String>>,
-        jti: Option<String>,
         extra: ExtraClaims,
     }
 
-    #[allow(dead_code)]
-    struct Header {
-        alg: String,
-        typ: Option<String>,
-        kid: Option<String>
-    }
-    
-    let header = jwt.header();
     let claims = jwt.claims();
 
-    #[allow(unused_variables)]
-    let header = Header {
-        alg: header.alg.to_string(),
-        typ: header.typ.clone().map(|x| x.to_string()),
-        kid: header.kid.clone().map(|x| x.to_string())
-    };
-
     let claims = Claims {
-        sub: claims.sub.clone().map(|x| x.to_string()),
-        iss: claims.iss.clone().map(|x| x.to_string()),
-        iat: claims.iat.map(|x| x.as_secs() as i64),
-        nbf: claims.nbf.map(|x| x.as_secs() as i64),
-        exp: claims.exp.map(|x| x.as_secs() as i64),
-        aud: None,
-        jti: claims.jti.clone().map(|x| x.to_string()),
         extra: ExtraClaims {
             app_node: claims.extra.get("app_node").map(|x| x.to_string()),
             node_id: claims.extra.get("node_id").map(|x| x.to_string()),

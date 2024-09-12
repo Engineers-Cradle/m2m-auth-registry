@@ -6,7 +6,7 @@
 
 ### Introduction
 
-This is a service that provides authentication between services. It is built using Rust and Redis.
+This is a service that provides authentication between services. It is a simple service that allows services to register and authenticate with each other. The service is designed to be fault-tolerant and scalable.
 
 ### 🦄 Prerequisites
 
@@ -23,6 +23,14 @@ WEB_SERVER_PORT=
 NUM_WORKERS=
 LOG_LEVEL=
 ```
+
+### 🎁 Crates
+
+| Name | Description | Visit |
+|------|-------------|-------|
+| http | REST API Server for adding and listing nodes | [Open](./crates/http/) |
+| attendance | Redis Pub/Sub Server which takes attendance of all connected nodes | [Open](./crates/attendance/) |
+| pinger | Redis Pub/Sub Server which help to ping all connected nodes | [Open](./crates/pinger/) |
 
 ### 🚀 Usage
 

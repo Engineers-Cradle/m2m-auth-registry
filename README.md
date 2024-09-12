@@ -35,7 +35,13 @@ LOG_LEVEL=
 ### 🚀 Usage
 
 ```bash
-$ cargo run
+$ cargo run --bin http
+$ cargo run --bin attendance
+$ cargo run --bin pinger
+
+// or
+
+$ docker-compose up
 ```
 
 ### 📝 License

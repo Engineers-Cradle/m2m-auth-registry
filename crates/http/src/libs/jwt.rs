@@ -1,68 +1,117 @@
 use core::str;
+use jwtk::{self, PublicKeyToJwk};
+use chrono::Duration;
 
-use min_jwt::encode_and_sign;
-use p256::ecdsa;
-use serde_json::json;
-
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct Header {
-    alg: String,
-    typ: String,
+pub fn generate_private_key() -> jwtk::ecdsa::EcdsaPrivateKey{
+    let private_key = jwtk::ecdsa::EcdsaPrivateKey::generate(jwtk::ecdsa::EcdsaAlgorithm::ES512).unwrap();
+    private_key
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct Claims {
-    sub: String,
-    name: String,
-    iat: i64,
+pub fn generate_public_key(
+    private_key: jwtk::ecdsa::EcdsaPrivateKey
+) -> jwtk::ecdsa::EcdsaPublicKey {
+    let public_key = jwtk::ecdsa::EcdsaPublicKey::from_coordinates(
+        &private_key.coordinates().unwrap().0,
+        &private_key.coordinates().unwrap().1,
+        jwtk::ecdsa::EcdsaAlgorithm::ES512
+    ).unwrap();
+
+    public_key
 }
 
-pub fn generate_keys() -> (ecdsa::SigningKey, ecdsa::VerifyingKey) {
-    let private_key = ecdsa::SigningKey::random(&mut rand::thread_rng());
-    let public_key = ecdsa::VerifyingKey::from(&private_key);
-    (private_key, public_key)
+pub fn generate_jwks(
+    private_key: jwtk::ecdsa::EcdsaPrivateKey,
+) -> jwtk::jwk::Jwk {
+    let jwks = private_key.public_key_to_jwk().unwrap();
+
+    jwks
 }
 
-pub fn generate_jwt(node_id: String, app_node: String, private_key: &ecdsa::SigningKey) -> String {
-    let binding = serde_json::to_value(json!({
-        "alg": "ES256",
-        "typ": "JWT",
-    }))
-    .unwrap()
-    .to_string();
-
-    let header = binding.as_bytes();
-
-    let binding = serde_json::to_value(json!({
-        "sub": node_id,
-        "name": app_node,
-        "iat": chrono::Utc::now().timestamp(),
-    }))
-    .unwrap()
-    .to_string();
-
-    let claims = binding.as_bytes();
-
-    let jwt = encode_and_sign(header, claims, &private_key).unwrap();
+pub fn generate_jwt(node_id: String, app_node: String, private_key: &jwtk::ecdsa::EcdsaPrivateKey) -> String {
+    let mut header_and_claims: jwtk::HeaderAndClaims<serde_json::Map<String, serde_json::Value>> = jwtk::HeaderAndClaims::new_dynamic();
+    header_and_claims.set_sub("m2m-service");
+    header_and_claims.set_iss("auth-registry");
+    header_and_claims.set_iat_now();
+    header_and_claims.set_nbf_from_now(std::time::Duration::from_secs(0));
+    header_and_claims.set_exp_from_now(std::time::Duration::from_secs(Duration::days(1).num_seconds() as u64));
+    header_and_claims.insert("node_id", node_id);
+    header_and_claims.insert("app_node", app_node);
+    
+    let jwt = jwtk::sign(&mut header_and_claims, private_key).unwrap();
     jwt
 }
 
-pub fn verify_jwt(jwt: &str, public_key: &ecdsa::VerifyingKey) -> bool {
-    let jwt = match min_jwt::verify(jwt, public_key) {
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct VerifyNDecodedResult {
+    pub success: bool,
+    pub node_id: Option<String>,
+    pub app_node: Option<String>,
+}
+
+pub fn verify_jwt(jwt: &str, public_key: jwtk::ecdsa::EcdsaPublicKey) -> VerifyNDecodedResult {
+    let jwt = match jwtk::verify::<serde_json::Map<String, serde_json::Value>>(jwt, &public_key) {
         Ok(jwt) => jwt,
-        Err(_) => return false,
+        Err(_) => return VerifyNDecodedResult {
+            success: false,
+            node_id: None,
+            app_node: None,
+        },
     };
 
-    let header: Vec<u8> = jwt.decode_header().unwrap();
-    let header = str::from_utf8(&header).unwrap();
-    let header: Header = serde_json::from_str(header).unwrap();
-    let claims: Vec<u8> = jwt.decode_claims().unwrap();
-    let claims = str::from_utf8(&claims).unwrap();
-    let claims: Claims = serde_json::from_str(claims).unwrap();
-
-    if header.alg != "ES256" {
-        return false;
+    struct ExtraClaims {
+        app_node: Option<String>,
+        node_id: Option<String>,
     }
 
-    true
+    #[allow(dead_code)]
+    struct Claims {
+        sub: Option<String>,
+        iss: Option<String>,
+        iat: Option<i64>,
+        nbf: Option<i64>,
+        exp: Option<i64>,
+        aud: Option<Vec<String>>,
+        jti: Option<String>,
+        extra: ExtraClaims,
+    }
+
+    #[allow(dead_code)]
+    struct Header {
+        alg: String,
+        typ: Option<String>,
+        kid: Option<String>
+    }
+    
+    let header = jwt.header();
+    let claims = jwt.claims();
+
+    #[allow(unused_variables)]
+    let header = Header {
+        alg: header.alg.to_string(),
+        typ: header.typ.clone().map(|x| x.to_string()),
+        kid: header.kid.clone().map(|x| x.to_string())
+    };
+
+    let claims = Claims {
+        sub: claims.sub.clone().map(|x| x.to_string()),
+        iss: claims.iss.clone().map(|x| x.to_string()),
+        iat: claims.iat.map(|x| x.as_secs() as i64),
+        nbf: claims.nbf.map(|x| x.as_secs() as i64),
+        exp: claims.exp.map(|x| x.as_secs() as i64),
+        aud: None,
+        jti: claims.jti.clone().map(|x| x.to_string()),
+        extra: ExtraClaims {
+            app_node: claims.extra.get("app_node").map(|x| x.to_string()),
+            node_id: claims.extra.get("node_id").map(|x| x.to_string()),
+        }
+    };
+
+    let node_id = claims.extra.node_id.clone().map(|x| x.replace("\"", ""));
+    let app_node = claims.extra.app_node.clone().map(|x| x.replace("\"", ""));
+
+    VerifyNDecodedResult {
+        success: true,
+        node_id,
+        app_node,
+    }
 }

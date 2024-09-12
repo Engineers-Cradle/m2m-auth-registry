@@ -1,7 +1,7 @@
 use crate::config::env::get_env;
 use crate::libs::db::{self, Node, NodeRegistration};
 use crate::libs::http::AppState;
-use crate::libs::jwt::{generate_jwt, verify_jwt};
+use crate::libs::jwt::{self, generate_jwt};
 use actix_web::{get, post, web, HttpRequest};
 use serde::Deserialize;
 
@@ -20,10 +20,6 @@ struct NodeVerify {
     token: String,
 }
 
-#[derive(Deserialize, serde::Serialize)]
-struct VerifyResult {
-    success: bool,
-}
 
 #[derive(Deserialize, serde::Serialize)]
 struct ListNodesResult {
@@ -123,7 +119,7 @@ async fn verify_node(
     req: HttpRequest,
     body: web::Json<NodeVerify>,
     data: web::Data<AppState>,
-) -> actix_web::web::Json<VerifyResult> {
+) -> actix_web::web::Json<jwt::VerifyNDecodedResult> {
     let register_token: Option<&str> = get_register_token(&req);
 
     let register_token: String = match register_token {
@@ -132,23 +128,39 @@ async fn verify_node(
     };
 
     if register_token == "" {
-        return actix_web::web::Json(VerifyResult { success: false });
+        return actix_web::web::Json(jwt::VerifyNDecodedResult { 
+            success: false,
+            app_node: None,
+            node_id: None,
+        });
     }
 
     if register_token != get_env().registration_token {
-        return actix_web::web::Json(VerifyResult { success: false });
+        return actix_web::web::Json(jwt::VerifyNDecodedResult {
+            success: false,
+            app_node: None,
+            node_id: None,
+        });
     }
 
     let token = body.token.clone();
 
     if token == "" {
-        return actix_web::web::Json(VerifyResult { success: false });
+        return actix_web::web::Json(jwt::VerifyNDecodedResult {
+            success:false,
+            node_id: None,
+            app_node: None, 
+        });
     }
 
-    let jwt_result = verify_jwt(&token, &data.public_key);
+    let public_key = jwt::generate_public_key(data.private_key.clone());
 
-    actix_web::web::Json(VerifyResult {
-        success: jwt_result,
+    let jwt_result = jwt::verify_jwt(&token, public_key);
+
+    actix_web::web::Json(jwt::VerifyNDecodedResult {
+        success: jwt_result.success,
+        app_node: jwt_result.app_node,
+        node_id: jwt_result.node_id,
     })
 }
 

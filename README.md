@@ -1,5 +1,9 @@
 ## M2M Service Auth Registry
 
+![forthebadge](https://forthebadge.com/images/badges/open-source.svg)
+![forthebadge](https://img.shields.io/github/languages/top/Engineers-Cradle/m2m-auth-registry?logo=rust&style=for-the-badge)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Engineers-Cradle/m2m-auth-registry/build-code.yaml?logo=rust&style=for-the-badge)
+
 ### Introduction
 
 This is a service that provides authentication between services. It is built using Rust and Redis.

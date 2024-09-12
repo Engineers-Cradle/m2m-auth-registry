@@ -114,11 +114,10 @@ async fn list_nodes(
     })
 }
 
-#[post("/node/verify")]
+#[post("/node/whoami")]
 async fn verify_node(
     req: HttpRequest,
     body: web::Json<NodeVerify>,
-    data: web::Data<AppState>,
 ) -> actix_web::web::Json<jwt::VerifyNDecodedResult> {
     let register_token: Option<&str> = get_register_token(&req);
 
@@ -153,7 +152,7 @@ async fn verify_node(
         });
     }
 
-    let public_key = jwt::generate_public_key(data.private_key.clone());
+    let public_key = jwt::read_public_key();
 
     let jwt_result = jwt::verify_jwt(&token, public_key);
 

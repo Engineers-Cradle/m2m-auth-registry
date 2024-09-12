@@ -5,14 +5,12 @@ use crate::libs::jwt;
 use actix_web::{web, App, HttpServer};
 use env_logger::Env;
 use listenfd::ListenFd;
-use p256::ecdsa;
 use tracing_actix_web::TracingLogger;
 
 #[derive(Clone)]
 pub struct AppState {
     pub redis_client: redis::Client,
-    pub private_key: ecdsa::SigningKey,
-    pub public_key: ecdsa::VerifyingKey,
+    pub private_key: jwtk::ecdsa::EcdsaPrivateKey,
 }
 
 #[actix_web::main]
@@ -22,11 +20,10 @@ pub async fn start_web_server() -> std::io::Result<()> {
     let redis_client: redis::Client =
         crate::libs::redis::connection_to_redis(&env_config.redis_url).await;
 
-    let key_pair = jwt::generate_keys();
+    let private_key = jwt::generate_private_key();
     let app_state: AppState = AppState {
         redis_client: redis_client,
-        private_key: key_pair.0,
-        public_key: key_pair.1,
+        private_key: private_key,
     };
 
     env_logger::init_from_env(Env::default().default_filter_or(env_config.log_level));

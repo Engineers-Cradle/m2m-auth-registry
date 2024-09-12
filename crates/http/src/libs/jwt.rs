@@ -4,7 +4,7 @@ use jwtk::{self, PublicKeyToJwk};
 use chrono::Duration;
 
 pub fn read_private_key() -> jwtk::ecdsa::EcdsaPrivateKey{
-    let private_key_content = fs::read_to_string("../../keys/private.pem").unwrap();
+    let private_key_content = fs::read_to_string("keys/private.pem").unwrap();
     let private_key = jwtk::ecdsa::EcdsaPrivateKey::from_pem(
         private_key_content.as_bytes(),
     ).unwrap();
@@ -12,7 +12,7 @@ pub fn read_private_key() -> jwtk::ecdsa::EcdsaPrivateKey{
 }
 
 pub fn read_public_key() -> jwtk::ecdsa::EcdsaPublicKey {
-    let private_key_content = fs::read_to_string("../../keys/public.pem").unwrap();
+    let private_key_content = fs::read_to_string("keys/public.pem").unwrap();
     let public_key = jwtk::ecdsa::EcdsaPublicKey::from_pem(
         private_key_content.as_bytes(),
     ).unwrap();
